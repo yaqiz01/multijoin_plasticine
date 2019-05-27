@@ -476,9 +476,9 @@ def plot_all():
     ax = faxs[i]; i+=1; plot_join3_bkt(fig, ax)
     ax = faxs[i]; i+=1; plot_3vs2_speedup_d(fig, ax)
     ax = faxs[i]; i+=1; plot_3vs2_speedup_bw(fig, ax)
-    ax = faxs[i]; i+=1; plot_sbsjoin3_h_bkt(fig, ax)
-    ax = faxs[i]; i+=1; plot_sbsjoin_speedup_d(fig, ax)
-    ax = faxs[i]; i+=1; plot_sbsjoin_speedup_K(fig, ax)
+    ax = faxs[i]; i+=1; plot_starjoin3_h_bkt(fig, ax)
+    ax = faxs[i]; i+=1; plot_starjoin_speedup_d(fig, ax)
+    ax = faxs[i]; i+=1; plot_starjoin_speedup_K(fig, ax)
     for r,row in enumerate(axs):
         for c,ax in enumerate(row):
             ax.set_title('({})'.format(chr(97+r*len(row)+c)),color='red',loc='left', pad=-140)
@@ -492,14 +492,14 @@ def plot_all():
     plt.savefig(plot_path, format='pdf', dpi=900)
     print('Generate {}'.format(plot_path))
 
-def get_sbs(xkey, xlist, ykey, **kws):
+def get_star(xkey, xlist, ykey, **kws):
     xs = []
     ys = []
     hs = [1,2,4,16,32,64]
     for x in xlist:
         try:
             kws[xkey] = x
-            if kws['algo'] == sbsjoin3:
+            if kws['algo'] == starjoin3:
                 yys = []
                 for h_bkt in hs:
                     try:
@@ -518,7 +518,7 @@ def get_sbs(xkey, xlist, ykey, **kws):
             pass
     return xs, ys
 
-def plot_sbsjoin3_h_bkt(fig=None, ax=None):
+def plot_starjoin3_h_bkt(fig=None, ax=None):
     nofig = fig is None
     if fig is None:
         fig, ax = plt.subplots()
@@ -531,7 +531,7 @@ def plot_sbsjoin3_h_bkt(fig=None, ax=None):
         xs = []
         for x in hs:
             try:
-                param = run_algo(algo=sbsjoin3, h_bkt=x, K=K, N=N, d=d)
+                param = run_algo(algo=starjoin3, h_bkt=x, K=K, N=N, d=d)
                 xs.append(x)
                 ys.append(param['sec'])
             except AssertionError as e:
@@ -545,22 +545,22 @@ def plot_sbsjoin3_h_bkt(fig=None, ax=None):
     ax.set_xlim(0, max(hs))
     if nofig:
         plt.tight_layout()
-        plot_path = 'images/sbs3_h.pdf'
+        plot_path = 'images/star3_h.pdf'
         plt.savefig(plot_path, format='pdf', dpi=900)
         print('Generate {}'.format(plot_path))
 
-def plot_sbsjoin_d(fig=None, ax=None):
+def plot_starjoin_d(fig=None, ax=None):
     nofig = fig is None
     if fig is None:
         fig, ax = plt.subplots()
     bws = [10, 49, 400]
-    algos = [sbsjoin2, sbsjoin3]
+    algos = [starjoin2, starjoin3]
     ds = np.linspace(10, 2000, 100, dtype=int)
 
     ax.grid(True, linestyle='--')
     cyc = cycler(linestyle=['-','--']) * cycler(color=getcolors("Paired", 8)[1:1+len(bws)]) 
     ax.set_prop_cycle(cyc)
-    name = {sbsjoin2:'(binary)', sbsjoin3:'(3-way)'}
+    name = {starjoin2:'(binary)', starjoin3:'(3-way)'}
     for algo in algos:
         for bw in bws:
             times = []
@@ -579,73 +579,73 @@ def plot_sbsjoin_d(fig=None, ax=None):
     ax.set_ylabel('Runtime (sec)')
     ax.set_ylim(bottom=0)
     if nofig:
-        plot_path = 'images/sbs_d.pdf'
+        plot_path = 'images/star_d.pdf'
         plt.savefig(plot_path, format='pdf', dpi=900)
         print('Generate {}'.format(plot_path))
 
-def plot_sbsjoin_K(fig=None, ax=None):
+def plot_starjoin_K(fig=None, ax=None):
     nofig = fig is None
     if fig is None:
         fig, ax = plt.subplots()
     bws = [10, 49, 500]
-    algos = [sbsjoin2, sbsjoin3]
+    algos = [starjoin2, starjoin3]
     Ks = np.linspace(100, 10000, 100, dtype=int)
 
     ax.grid(True, linestyle='--')
     cyc = cycler(marker=['^','o'][0:len(algos)]) * cycler(color=getcolors("Paired", 8)[1:1+len(bws)]) 
     ax.set_prop_cycle(cyc)
-    name = {sbsjoin2:'binary join', sbsjoin3:'3-way join'}
+    name = {starjoin2:'binary join', starjoin3:'3-way join'}
     for algo in algos:
         for bw in bws:
-            xs, ys = get_sbs('K',Ks,'min',dram_bw_GBs=bw,algo=algo)
+            xs, ys = get_star('K',Ks,'min',dram_bw_GBs=bw,algo=algo)
             ax.plot(xs, ys, markevery=10, label='DDR3:{}GB/s {}'.format(bw, name[algo]))
     ax.legend(fontsize='x-small')
     ax.set_xlabel('K')
     ax.set_ylabel('Runtime (min)')
     ax.set_ylim(bottom=0)
     if nofig:
-        plot_path = 'images/sbs_K.pdf'
+        plot_path = 'images/star_K.pdf'
         plt.savefig(plot_path, format='pdf', dpi=900)
         print('Generate {}'.format(plot_path))
 
-def plot_sbsjoin_N(fig=None, ax=None):
+def plot_starjoin_N(fig=None, ax=None):
     nofig = fig is None
     if fig is None:
         fig, ax = plt.subplots()
     ds = [100, 500, 1000]
-    algos = [sbsjoin2, sbsjoin3]
+    algos = [starjoin2, starjoin3]
     Ns = np.linspace(1000000, 100000000, 100, dtype=int)
 
     ax.grid(True, linestyle='--')
     cyc = cycler(linestyle=['-','--']) * cycler(color=getcolors("Paired", 8)[1:1+len(ds)]) 
     ax.set_prop_cycle(cyc)
-    name = {sbsjoin2:'(binary)', sbsjoin3:'(3-way)'}
+    name = {starjoin2:'(binary)', starjoin3:'(3-way)'}
     for algo in algos:
         for d in ds:
-            xs, ys = get_sbs('N',Ns,'min',d=d,algo=algo)
+            xs, ys = get_star('N',Ns,'min',d=d,algo=algo)
             ax.plot(xs, ys, markevery=10, label='d={} {}'.format(d, name[algo]))
     ax.legend(fontsize='x-small')
     ax.set_xlabel('N')
     ax.set_ylabel('Runtime (min)')
     ax.set_ylim(bottom=0)
     if nofig:
-        plot_path = 'images/sbs_N.pdf'
+        plot_path = 'images/star_N.pdf'
         plt.savefig(plot_path, format='pdf', dpi=900)
         print('Generate {}'.format(plot_path))
 
-def plot_sbsjoin_bw(fig=None, ax=None, K=1000, d=1000):
+def plot_starjoin_bw(fig=None, ax=None, K=1000, d=1000):
     nofig = fig is None
     if fig is None:
         fig, ax = plt.subplots()
     bw = [10,30,50,100,500]
-    algos = [sbsjoin2, sbsjoin3]
+    algos = [starjoin2, starjoin3]
 
     ax.grid(True, linestyle='--')
     # cyc = cycler(linestyle=['-','--']) * cycler(color=getcolors("Paired", 8)[1:1+len(ds)]) 
     # ax.set_prop_cycle(cyc)
-    name = {sbsjoin2:'binary', sbsjoin3:'3-way'}
+    name = {starjoin2:'binary', starjoin3:'3-way'}
     for algo in algos:
-        xs, ys = get_sbs('dram_bw_GBs',bw,'min',algo=algo, N=100000000, K=K, d=d)
+        xs, ys = get_star('dram_bw_GBs',bw,'min',algo=algo, N=100000000, K=K, d=d)
         ax.plot(xs, ys, label='{}'.format(name[algo]))
     ax.set_ylim(bottom=0)
     ax.plot([-1],[-1], color='none', label='K={} d={}'.format(K,d))
@@ -653,11 +653,11 @@ def plot_sbsjoin_bw(fig=None, ax=None, K=1000, d=1000):
     ax.set_xlabel('bw (GB/s)')
     ax.set_ylabel('Runtime (min)')
     if nofig:
-        plot_path = 'images/sbs_bw.pdf'
+        plot_path = 'images/star_bw.pdf'
         plt.savefig(plot_path, format='pdf', dpi=900)
         print('Generate {}'.format(plot_path))
 
-def get_sbs3vs2_speedup(xkey, xlist, ykey, **kws):
+def get_star3vs2_speedup(xkey, xlist, ykey, **kws):
     xs = []
     ys = []
     hs = [1,2,4,16,32,64]
@@ -670,13 +670,13 @@ def get_sbs3vs2_speedup(xkey, xlist, ykey, **kws):
             y3s = []
             for h_bkt in hs:
                 try:
-                    param = run_algo(algo=sbsjoin3, h_bkt=h_bkt, **join3kws)
+                    param = run_algo(algo=starjoin3, h_bkt=h_bkt, **join3kws)
                     y3s.append(param[ykey])
                 except AssertionError as e:
                     pass
             assert(len(y3s)>0)
             y3 = min(y3s)
-            param = run_algo(algo=sbsjoin2, **join2kws)
+            param = run_algo(algo=starjoin2, **join2kws)
             y2 = param[ykey]
             xs.append(x)
             ys.append(y2 * 1.0 / y3)
@@ -684,7 +684,7 @@ def get_sbs3vs2_speedup(xkey, xlist, ykey, **kws):
             pass
     return xs, ys
 
-def plot_sbsjoin_speedup_d(fig=None, ax=None):
+def plot_starjoin_speedup_d(fig=None, ax=None):
     bws = [20, 49, 100, 200, 500]
     ds = np.linspace(100, 1000, 100, dtype=int)
     nofig = fig is None
@@ -692,7 +692,7 @@ def plot_sbsjoin_speedup_d(fig=None, ax=None):
         fig, ax = plt.subplots()
     ax.grid(True, linestyle='--')
     for bw in bws:
-        xs, ys = get_sbs3vs2_speedup('d',ds,'cycle', K=1000, N=100000000, dram_bw_GBs=bw)
+        xs, ys = get_star3vs2_speedup('d',ds,'cycle', K=1000, N=100000000, dram_bw_GBs=bw)
         ax.plot(xs, ys, label='bw:{}GB/s'.format(bw))
     ax.plot(ds, [1]*len(ds), linestyle='--', color='black')
     ax.legend(fontsize='x-small')
@@ -701,11 +701,11 @@ def plot_sbsjoin_speedup_d(fig=None, ax=None):
     ax.set_xlabel('d')
     ax.set_ylabel(r'Star: 3 vs. 2-way Speedup')
     if nofig:
-        plot_path = 'images/sbs_speedup_d.pdf'
+        plot_path = 'images/star_speedup_d.pdf'
         plt.savefig(plot_path, format='pdf', dpi=900)
         print('Generate {}'.format(plot_path))
 
-def plot_sbsjoin_speedup_K(fig=None, ax=None):
+def plot_starjoin_speedup_K(fig=None, ax=None):
     bws = [30, 49, 100, 200, 400]
     Ks = np.linspace(100,2000,100, dtype=int)
     nofig = fig is None
@@ -713,7 +713,7 @@ def plot_sbsjoin_speedup_K(fig=None, ax=None):
         fig, ax = plt.subplots()
     ax.grid(True, linestyle='--')
     for bw in bws:
-        xs, ys = get_sbs3vs2_speedup('K',Ks,'cycle', dram_bw_GBs=bw, N=100000000, 
+        xs, ys = get_star3vs2_speedup('K',Ks,'cycle', dram_bw_GBs=bw, N=100000000, 
                 d=lambda param: param['K']/4)
         ax.plot(xs, ys, label='bw:{}GB/s'.format(bw))
     ax.plot(Ks, [1]*len(Ks), linestyle='--', color='black')
@@ -723,11 +723,11 @@ def plot_sbsjoin_speedup_K(fig=None, ax=None):
     ax.set_xlabel('K')
     ax.set_ylabel(r'Star: 3 vs. 2-way Speedup')
     if nofig:
-        plot_path = 'images/sbs_speedup_K.pdf'
+        plot_path = 'images/star_speedup_K.pdf'
         plt.savefig(plot_path, format='pdf', dpi=900)
         print('Generate {}'.format(plot_path))
 
-def plot_sbsjoin_perfwatt_d(fig=None, ax=None):
+def plot_starjoin_perfwatt_d(fig=None, ax=None):
     Ns = [10000,1000000,10000000]
     ds = np.linspace(100, 1000, 100, dtype=int)
     nofig = fig is None
@@ -735,7 +735,7 @@ def plot_sbsjoin_perfwatt_d(fig=None, ax=None):
         fig, ax = plt.subplots()
     ax.grid(True, linestyle='--')
     for n in Ns:
-        xs, ys = get_sbs3vs2_speedup('d',ds,'total_energy', K=1000, N=n)
+        xs, ys = get_star3vs2_speedup('d',ds,'total_energy', K=1000, N=n)
         ax.plot(xs, ys, label='N={}'.format(n))
     ax.plot(ds, [1]*len(ds), linestyle='--', color='black')
     ax.legend(fontsize='x-small')
@@ -744,11 +744,11 @@ def plot_sbsjoin_perfwatt_d(fig=None, ax=None):
     ax.set_xlabel('d')
     ax.set_ylabel('Perf/Watt Improvement')
     if nofig:
-        plot_path = 'images/sbs_perfwatt_d.pdf'
+        plot_path = 'images/star_perfwatt_d.pdf'
         plt.savefig(plot_path, format='pdf', dpi=900)
         print('Generate {}'.format(plot_path))
 
-def plot_sbsjoin_speedup_N(fig=None, ax=None):
+def plot_starjoin_speedup_N(fig=None, ax=None):
     Ns = np.linspace(1000000, 100000000, 100, dtype=int)
     ds = np.linspace(70, 2000, 5, dtype=int)
     nofig = fig is None
@@ -760,9 +760,9 @@ def plot_sbsjoin_speedup_N(fig=None, ax=None):
         speedups = []
         for x in Ns:
             try:
-                param = run_algo(algo=sbsjoin2, N=x, K=3000, d=d)
+                param = run_algo(algo=starjoin2, N=x, K=3000, d=d)
                 e2 = param['cycle']
-                param = run_algo(algo=sbsjoin3, N=x, K=3000, d=d)
+                param = run_algo(algo=starjoin3, N=x, K=3000, d=d)
                 e3 = param['cycle']
                 speedup = e2 * 1.0 / e3
                 xs.append(x)
@@ -776,39 +776,33 @@ def plot_sbsjoin_speedup_N(fig=None, ax=None):
     ax.set_xlabel('N')
     ax.set_ylabel(r'$Speedup_{\frac{3way}{binary}}$')
     if nofig:
-        plot_path = 'images/sbs_speedup_N.pdf'
+        plot_path = 'images/star_speedup_N.pdf'
         plt.tight_layout()
         plt.savefig(plot_path, format='pdf', dpi=900)
         print('Generate {}'.format(plot_path))
 
-def plot_sbsjoin():
+def plot_starjoin():
     fig, axs = plt.subplots(2,3)
     faxs = np.array(axs).reshape(1,6)[0]
     i=0
-    ax = faxs[i]; i+=1; plot_sbsjoin_bw(fig, ax, K=100, d=100)
-    ax = faxs[i]; i+=1; plot_sbsjoin_bw(fig, ax, K=1000, d=1000)
-    ax = faxs[i]; i+=1; plot_sbsjoin_bw(fig, ax, K=100000, d=100000)
-    ax = faxs[i]; i+=1; plot_sbsjoin3_h_bkt(fig, ax)
-    # ax = faxs[i]; i+=1; plot_sbsjoin_d(fig, ax)
-    ax = faxs[i]; i+=1; plot_sbsjoin_speedup_d(fig, ax)
-    ax = faxs[i]; i+=1; plot_sbsjoin_speedup_K(fig, ax)
-    # plot_sbsjoin_perfwatt_d(fig, ax4)
+    ax = faxs[i]; i+=1; plot_starjoin_bw(fig, ax, K=100, d=100)
+    ax = faxs[i]; i+=1; plot_starjoin_bw(fig, ax, K=1000, d=1000)
+    ax = faxs[i]; i+=1; plot_starjoin_bw(fig, ax, K=100000, d=100000)
+    ax = faxs[i]; i+=1; plot_starjoin3_h_bkt(fig, ax)
+    # ax = faxs[i]; i+=1; plot_starjoin_d(fig, ax)
+    ax = faxs[i]; i+=1; plot_starjoin_speedup_d(fig, ax)
+    ax = faxs[i]; i+=1; plot_starjoin_speedup_K(fig, ax)
+    # plot_starjoin_perfwatt_d(fig, ax4)
     for r,row in enumerate(axs):
         for c,ax in enumerate(row):
             ax.set_title('({})'.format(chr(97+r*len(row)+c)),color='red',loc='left', pad=-155)
             # for tick in ax.get_yticklabels():
                 # tick.set_rotation(90)
-    plot_path = 'images/sbs.pdf'
+    plot_path = 'images/star.pdf'
     fig.set_size_inches(8,5)
     plt.tight_layout()
     plt.savefig(plot_path, format='pdf', dpi=900)
     print('Generate {}'.format(plot_path))
-
-def run_algo(**kvs):
-    param = init_param(**kvs)
-    param['algo'](param)
-    derive_stat(param)
-    return param
 
 def plot_cpu_comp(fig=None, ax=None):
     df = pd.read_csv(
@@ -849,8 +843,8 @@ def main():
     # param = run_algo(algo=join2, d=800, N=1000)
     # param = run_algo(algo=join3)
     # param = run_algo(algo=join3, Hh_rec=1000, d=100000000/1000,N=100000000)
-    # param = run_algo(algo=sbsjoin2)
-    # param = run_algo(algo=sbsjoin3)
+    # param = run_algo(algo=starjoin2)
+    # param = run_algo(algo=starjoin3)
     # for k in param:
         # print(k + ":" + str(param[k]))
 
@@ -863,17 +857,17 @@ def main():
     # plot_3vs2_speedup_d()
     # plot_3vs2_speedup_bw()
     # plot_3vs2_perfwatt()
-    # plot_sbsjoin_d()
-    # plot_sbsjoin_K()
-    # plot_sbsjoin_N()
-    # plot_sbsjoin_bw()
-    # plot_sbsjoin3_h_bkt()
-    # plot_sbsjoin_speedup_d()
-    # plot_sbsjoin_speedup_N()
-    # plot_sbsjoin_speedup_K()
-    # plot_sbsjoin_perfwatt_d()
+    # plot_starjoin_d()
+    # plot_starjoin_K()
+    # plot_starjoin_N()
+    # plot_starjoin_bw()
+    # plot_starjoin3_h_bkt()
+    # plot_starjoin_speedup_d()
+    # plot_starjoin_speedup_N()
+    # plot_starjoin_speedup_K()
+    # plot_starjoin_perfwatt_d()
     # plot_3vs2()
-    # plot_sbsjoin()
+    # plot_starjoin()
     # plot_cpu_comp()
 
     # plot_join3_bkt()

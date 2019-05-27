@@ -162,7 +162,7 @@ def groupby(table, hashes, param):
     # layout_groupby_vec(table, hashes, param)
     layout_groupby_novec(table, hashes, param)
 
-# three-way join of three equal size tables
+# 3-way self joins on Plasticine
 def join3(param):
 
     # 1. Group by data with hash values
@@ -405,6 +405,7 @@ def join2_binary(param, T1, T2, T3, H, h):
     accum(param, [T12 + '_join_pmu_active', 'pmu_active'], param[h+'_bkt'] * active) # Read of R
     accum(param, [T12 + '_join_pcu_active', 'pcu_active'], param[h+'_bkt'] * active)
 
+# Cascaded binary self joins on Plasticine
 def join2(param):
     join2_binary(param, 'R', 'S', 'RS', 'H', 'h')
     join2_binary(param, 'RS', 'T', None, 'G', 'g')
@@ -424,7 +425,7 @@ def onchip_groupby(table, hashes, npmu, param):
     return lat, npcu*active, npmu*active
 
 # binary join small T1 and big T2 and store to T3. If no store T3 is None
-def sbsjoin2_binary(param,T1,T2,T3,h):
+def starjoin2_binary(param,T1,T2,T3,h):
     # T1 is the small table. T2 is the big table
     if param[T1+'_rec'] > param[T2+'_rec']:
         temp = T1
@@ -479,8 +480,8 @@ def sbsjoin2_binary(param,T1,T2,T3,h):
         divup(param['tot_comp_rec_'+T12], param['pcu_lane'])
     )
 
-# binary join of big S and small R and T.
-def sbsjoin2(param):
+# Cascaded star binary joins on Plasticine
+def starjoin2(param):
     set_param(param,h_bkt=param['npmu']) # number of buckets for h
     assert(param['h_bkt'] <= param['d']), 'h_bkt={} > d={}'.format(param['h_bkt'], param['d'])
     set_param(param,h_rec=divup(param['K'], param['h_bkt'])) # bucket size of R hashed by h
@@ -489,11 +490,11 @@ def sbsjoin2(param):
     set_param(param,g_rec=divup(param['K'], param['g_bkt'])) # bucket size of T hashed by g
     assert(param['g_rec'] <= divup(param['pmu_cap_word'], param['T_col']))
 
-    sbsjoin2_binary(param,'R','S','RS','h')
-    sbsjoin2_binary(param,'T','RS',None,'g')
+    starjoin2_binary(param,'R','S','RS','h')
+    starjoin2_binary(param,'T','RS',None,'g')
 
-# three-way join of big S and small R and T.
-def sbsjoin3(param):
+# 3-way star join on Plasticine
+def starjoin3(param):
     set_param(param,g_bkt=param['npmu'] / param['h_bkt']) # number of buckets for g
     set_param(param,h_rec=divup(param['K'], param['h_bkt'])) # bucket size of R hashed by h
     assert(param['h_rec']*param['R_col'] <= param['pmu_cap_word'])
@@ -633,7 +634,7 @@ def init_param(**kvs):
         set_param(param,R_rec=param['N'])
         set_param(param,S_rec=param['N']) 
         set_param(param,T_rec=param['N'])
-    elif param['algo'] in [sbsjoin2, sbsjoin3]:
+    elif param['algo'] in [starjoin2, starjoin3]:
         set_param(param,N=1000000) # number records in S table
         set_param(param,K=1000) # number records in R and T table
         set_param(param,d=100) # maximum number of distinct value in all table for column B 
@@ -690,7 +691,7 @@ def init_param(**kvs):
         set_hashed_rec(param, 'RSG', 'g')
         set_hashed_rec(param, 'T', 'G')
         set_hashed_rec(param, 'TG', 'g')
-    elif param['algo'] in [sbsjoin2]:
+    elif param['algo'] in [starjoin2]:
         set_param(param,hop=2) # number of operations for hash function h 
         set_param(param,gop=2) # number of operations for hash function g
         set_param(param,h_bkt=min(param['npmu'], param['d'])) # number of bucket for h
@@ -707,7 +708,7 @@ def init_param(**kvs):
         set_hashed_rec(param, 'T', 'g')
         set_hashed_rec(param, 'RS', 'g')
 
-    elif param['algo'] in [sbsjoin3]:
+    elif param['algo'] in [starjoin3]:
         set_param(param,hop=2) # number of operations for hash function h 
         set_param(param,gop=2) # number of operations for hash function g
         set_param(param,h_bkt=min(8, param['d'])) # number of bucket for h
@@ -738,14 +739,14 @@ def init_param(**kvs):
         # double buffered PMU will be used to store TGg
         assert(param['TGg_size'] <= param['pmu_cap_word']/2), \
             "TGg_size={} > pmu_cap/2={}".format(param['TGg_size'], param['pmu_cap_word']/2)
-    elif param['algo'] in [sbsjoin2]:
+    elif param['algo'] in [starjoin2]:
         # double buffered PMU will be used to store Rh
         assert(param['Rh_size'] <= param['pmu_cap_word']/2), \
             "Rh_size={} > pmu_cap/2={}".format(param['Rh_size'], param['pmu_cap_word']/2)
         # double buffered PMU will be used to store Tg
         assert(param['Tg_size'] <= param['pmu_cap_word']/2), \
             "Tg_size={} > pmu_cap/2={}".format(param['Tg_size'], param['pmu_cap_word']/2)
-    elif param['algo'] in [sbsjoin3]:
+    elif param['algo'] in [starjoin3]:
         # double buffered PMU will be used to store Rh and Tg
         assert(param['Rh_size'] <= param['pmu_cap_word']/4), \
             "Rh_size={} > pmu_cap/4={}".format(param['Rh_size'], param['pmu_cap_word']/4)
@@ -784,4 +785,10 @@ def join_rec(R1,R2,param):
     assert(d <= N1), 'd={} > N1={}'.format(d,N1)
     assert(d <= N2), 'd={} > N2={}'.format(d,N2)
     return divup(N1 * N2, d)
+
+def run_algo(**kvs):
+    param = init_param(**kvs)
+    param['algo'](param)
+    derive_stat(param)
+    return param
 
